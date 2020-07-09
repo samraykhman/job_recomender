@@ -11,7 +11,7 @@ import re
 import unidecode
 
 # function to retrieve link of every job posting
-def get_hyperlinks(url, header):
+def get_hyperlinks(url, header, empty_list):
     """
     Gets the hyperlink of every job posting on stackoverflow's job post portal
     
@@ -19,11 +19,13 @@ def get_hyperlinks(url, header):
     -----------
     url: string
         page of stackoverflow with multiple job postings
-    header:
+    header: string
         user-agent request header in case website would not let me get data otherwise
+    empty_list: list
+        an empty list that will later be filled with values
     Returns:
     --------
-    all_hyperlinks: list
+    empty_list: list
         list of each hyperlink that related to a job posting on stackoverflow
     """
     response = requests.get(url, headers=header)
@@ -37,12 +39,12 @@ def get_hyperlinks(url, header):
         job_link_html = job.find_all('a', href=True)
         
         for job_link in job_link_html:
-            all_hyperlinks.append('https://stackoverflow.com'+ job_link['href'])
+            empty_list.append('https://stackoverflow.com'+ job_link['href'])
             
-    return all_hyperlinks
+    return empty_list
 
 # function to retreive info about each job posting
-def each_job(url):
+def each_job(url, header, empty_list):
     """ 
     Gets the job's position title, technology, description, overview
 
@@ -50,10 +52,14 @@ def each_job(url):
     -----------
     url: string
         the hyperlink of a job posting
+    header: string
+        user-agent request header in case website would not let me get data otherwise
+    empty_list: list
+        an empty list that will later be filled with values
     Returns:
     --------
-    job_desc_list: dict
-        dictionary of information of each job
+    empty_list: list
+        list of dictionaries of information of each job
     """
     time.sleep(2)
     
@@ -93,12 +99,12 @@ def each_job(url):
         'languages':tech,
         'overview':overview}
 # creating list of job postings to later turn into a dataframe
-    job_desc_list.append(job_post_dict)
+    empty_list.append(job_post_dict)
     
-    return job_desc_list
+    return empty_list
 
 # function to clean the text that was scraped
-def clean_text(text):
+def clean_text(text, pattern):
     """
     Make text lowercase and remove text in square brackets, punctuation, useless characters, and words with numbers in them
 
@@ -106,6 +112,8 @@ def clean_text(text):
     -----------
     text: string
         value of a certain column in a dataframe that corresponds to something from the job posting
+    pattern: regex
+        regex statement for cleaning text
     Returns:
     -------- 
     text:
@@ -136,8 +144,8 @@ def fix_description(text):
         cleaned description body
     """
     separate = text.split()
-    joined = ' '.join(list([x.strip('\\n') for x in d]))
-    final_joined = ' '.join(hell.split('\\n')[::3])
+    joined = ' '.join(list([x.strip('\\n') for x in separate]))
+    final_joined = ' '.join(joined.split('\\n')[::3])
     return final_joined
 
 # function to keep each job's position title, without uneccessary characters
@@ -158,7 +166,7 @@ def keep_position_name(text):
     return text
 
 # code to tokenize text manually instead of relying on sklearn's tfidf vectorizer
-def tokenize(text):
+def tokenize(text, token):
     """
     Tokenizes the text data
 
@@ -166,11 +174,13 @@ def tokenize(text):
     -----------
     text: string
         value of a column that needs tokenizing
+    token: function
+        function to tokenize text data
     Returns:
     --------
     text: list
         tokenized list of strings
     """
-    text = [word_tokenize(x) for x in text]
+    text = [token(x) for x in text]
     return text
 
